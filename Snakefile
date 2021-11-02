@@ -73,5 +73,5 @@ rule spacegraphcats:
     params: outdir = "outputs/spacegraphcats/"
     conda: "envs/spacegraphcats_multifasta_prot.yml"
     shell:'''
-    python -m spacegraphcats run {inputs.conf} build_cdbg_list_by_record_x  --nolock --outdir={params.outdir} --rerun-incomplete 
+    python -m spacegraphcats run {input.conf} build_cdbg_list_by_record_x  --nolock --outdir={params.outdir} --rerun-incomplete 
     '''
