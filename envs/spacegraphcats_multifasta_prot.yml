@@ -16,5 +16,4 @@ dependencies:
     - sourmash>=4.1.1,<5
     - pip
     - pip:
-      - https://github.com/dib-lab/pybbhash/archive/spacegraphcats.zip
       - git+https://github.com/spacegraphcats/spacegraphcats@multifasta_prot 

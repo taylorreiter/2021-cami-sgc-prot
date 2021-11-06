@@ -67,7 +67,7 @@ rule spacegraphcats:
         conf="conf/CAMI_low_sgc_conf1.yml"
     output: "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x/multifasta_x.cdbg_annot.csv"
     resources: 
-        mem_mb = 64000,
+        mem_mb = 900000,
         tmpdir=TMPDIR
     threads: 1
     params: outdir = "outputs/spacegraphcats/"
