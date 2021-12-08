@@ -1,0 +1,13 @@
+catlas_base: CAMI_low
+input_sequences:
+- outputs/abundtrim/CAMI_low.abundtrim.fq.gz
+ksize: 31
+radius: 1
+multifasta_x_reference:
+- /home/tereiter/github/2021-pfam-shared-kmers/outputs/pfam_fastas/PF01297.19.fa
+- /home/tereiter/github/2021-pfam-shared-kmers/outputs/pfam_fastas/PF00528.24.fa
+- /home/tereiter/github/2021-pfam-shared-kmers/outputs/pfam_fastas/PF13207.8.fa
+- /home/tereiter/github/2021-pfam-shared-kmers/outputs/pfam_fastas/PF06929.13.fa
+multifasta_x_protein_ksize: 10
+multifasta_x_query_is_dna: false
+multifasta_x_search_mode: gather+nbhd
