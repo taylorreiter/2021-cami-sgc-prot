@@ -3,8 +3,8 @@ TMPDIR = "/scratch/tereiter"
 def checkpoint_separate_cdbg_nodes_by_annot(wildcards):
     # checkpoint_output encodes the output dir from the checkpoint rule.
     checkpoint_output = checkpoints.separate_cdbg_nodes_by_annot.get(**wildcards).output[0]    
-    file_names = expand("outputs/spacegraphcats/CAMI_low_k31_r1_multifata_x_sequences/{pfam}.nbhds.reads.fa",
-                        pfam = glob_wildcards(os.path.join(checkpoint_output, "{pfam}_cdbg_nodes.tsv")).pfam)
+    file_names = expand("outputs/spacegraphcats/CAMI_low_k31_r1_multifata_x_sequences/{pfam}.nbhds.reads.gz",
+                        pfam = glob_wildcards(os.path.join(checkpoint_output, "{pfam}_cdbg_nodes.tsv.gz")).pfam)
     return file_names
 
 rule all:
@@ -102,7 +102,7 @@ checkpoint separate_cdbg_nodes_by_annot:
     
 rule promote_multifasta_cdbg_nodes_to_neighborhood:
     input: 
-        cdbg_nodes = "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}_cdbg_nodes.tsv"
+        cdbg_nodes = "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}_cdbg_nodes.tsv.gz"
     output: "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.gz"
     params:
         cdbg_dir="outputs/spacegraphcats/CAMI_low_k31",
@@ -129,7 +129,7 @@ rule extract_contig_sequences:
         tmpdir = TMPDIR
     threads: 1
     shell:'''
-    python -m spacegraphcats.search.extract_contigs --contigs-db {input.contigs_db} {input.cdbg_nbhds} -o PF01297.19.fa.nbhds.fa
+    python -m spacegraphcats.search.extract_contigs --contigs-db {input.contigs_db} {input.cdbg_nbhds} -o {output}
     '''
 
 rule make_reads_bgz:
@@ -164,8 +164,8 @@ rule extract_reads:
     input: 
         bgz ="outputs/spacegraphcats/CAMI_low/reads.bgz",
         idx = "outputs/spacegraphcats/CAMI_low_k31/reads.bgz.index",
-        nbhds = "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.fa"
-    output: "outputs/spacegraphcats/CAMI_low_k31_r1_multifata_x_sequences/{pfam}.nbhds.reads.fa"
+        cdbg_nbhds = "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.gz"
+    output: "outputs/spacegraphcats/CAMI_low_k31_r1_multifata_x_sequences/{pfam}.nbhds.reads.gz"
     threads: 1
     conda: "envs/spacegraphcats_prot_gather.yml"
     benchmark: "benchmarks/sgc_cami_low_k31_r1_extract_reads_{pfam}.tsv"
