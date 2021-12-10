@@ -3,12 +3,13 @@ TMPDIR = "/scratch/tereiter"
 def checkpoint_separate_cdbg_nodes_by_annot(wildcards):
     # checkpoint_output encodes the output dir from the checkpoint rule.
     checkpoint_output = checkpoints.separate_cdbg_nodes_by_annot.get(**wildcards).output[0]    
-    file_names = expand("outputs/spacegraphcats/CAMI_low_k31_r1_multifata_x_sequences/{pfam}.nbhds.reads.gz",
+    file_names = expand("outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.reads.gz",
                         pfam = glob_wildcards(os.path.join(checkpoint_output, "{pfam}_cdbg_nodes.tsv.gz")).pfam)
     return file_names
 
 rule all:
     input:
+        "outputs/abundtrim/reads_that_were_trimmed_before_sgc_names.txt",
         checkpoint_separate_cdbg_nodes_by_annot
 
 rule download_CAMI:
@@ -68,11 +69,35 @@ rule abundtrim:
     interleave-reads.py {input} | trim-low-abund.py --gzip -C 3 -Z 18 -M 60e9 -V - -o {output}
     '''
 
+rule grab_trimmed_reads:
+    input: 
+        raw = "inputs/CAMI_low/RL_S001__insert_270.fq.gz",
+        abundtrim = "outputs/abundtrim/CAMI_low.abundtrim.fq.gz"
+    output: "outputs/abundtrim/reads_that_were_trimmed_before_sgc.fq"
+    resources: 
+        mem_mb = 16000,
+        tmpdir=TMPDIR
+    threads: 1
+    shell:'''
+    gunzip -c {input.raw} {input.abundtrim} | paste  - - - - | sort |uniq |tr "\t" "\n" > {output}
+    '''
+
+rule grab_names_of_trimmed_reads:
+    input: "outputs/abundtrim/reads_that_were_trimmed_before_sgc.fq"
+    output: "outputs/abundtrim/reads_that_were_trimmed_before_sgc_names.txt" 
+    resources: 
+        mem_mb = 16000,
+        tmpdir=TMPDIR
+    threads: 1
+    shell:'''
+    grep "@" {input} > {output}
+    '''
+
 rule spacegraphcats:
     input:
         fq="outputs/abundtrim/CAMI_low.abundtrim.fq.gz",
         #conf="conf/CAMI_low_sgc_conf1.yml"
-        conf = "conf/CAMI_low_sgc_conf3.yml"
+        conf = "conf/CAMI_low_sgc_conf_all_pfam.yml"
     output: 
         "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x/multifasta_x.cdbg_annot.csv",
         "outputs/spacegraphcats/CAMI_low_k31/bcalm.unitigs.db"
@@ -165,7 +190,7 @@ rule extract_reads:
         bgz ="outputs/spacegraphcats/CAMI_low/reads.bgz",
         idx = "outputs/spacegraphcats/CAMI_low_k31/reads.bgz.index",
         cdbg_nbhds = "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.gz"
-    output: "outputs/spacegraphcats/CAMI_low_k31_r1_multifata_x_sequences/{pfam}.nbhds.reads.gz"
+    output: "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.reads.gz"
     threads: 1
     conda: "envs/spacegraphcats_prot_gather.yml"
     benchmark: "benchmarks/sgc_cami_low_k31_r1_extract_reads_{pfam}.tsv"
@@ -173,6 +198,41 @@ rule extract_reads:
         mem_mb = 200000,
         tmpdir = TMPDIR
     shell:'''
-    python -Werror -m spacegraphcats.search.extract_reads {input.bgz} {input.idx} {input.nbhds} -o {output}
+    python -Werror -m spacegraphcats.search.extract_reads {input.bgz} {input.idx} {input.cdbg_nbhds} -o {output}
     '''
 
+rule grab_sgc_read_names:
+    input: "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.reads.gz"
+    output: "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.read_names.txt"
+    threads: 1
+    benchmark: "benchmarks/sgc_cami_low_k31_r1_grab_read_names_{pfam}.tsv"
+    resources:
+        mem_mb = 10000,
+        tmpdir = TMPDIR
+    shell:'''
+    zcat {input} | grep "@" > {output} 
+    '''
+
+rule download_pfam_id_to_name_map:
+    output: "inputs/Pfam-A.clans.tsv.gz"
+    threads: 1
+    resources:
+        mem_mb = 10000,
+        tmpdir = TMPDIR
+    shell:'''
+    wget -O {output} ftp://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/Pfam-A.clans.tsv.gz
+    '''
+
+rule grab_gs_read_names:
+    input:
+        gs = "/home/tereiter/github/2021-cami-annot/outputs/gs_read_annotations/CAMI_low_gs_read_annotations_with_eggnog.tsv",
+        pfam_map = "inputs/Pfam-A.clans.tsv.gz"
+        pfam_sgc = "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.read_names.txt"
+    output: "outputs/gs_read_sets/{pfam}_gs_read_names.tsv"
+    threads: 1
+    benchmark: "benchmarks/gs_grab_read_names_{pfam}.tsv"
+    resources:
+        mem_mb = 32000,
+        tmpdir = TMPDIR
+    script: ""
+    
