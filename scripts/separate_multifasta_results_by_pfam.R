@@ -11,4 +11,4 @@ multifasta_results %>%
   mutate(pfam = gsub(".fa", "", pfam)) %>%
   select(pfam, cdbg_id) %>%
   group_by(pfam) %>%
-  group_walk(~ write_tsv(.x, paste0(snakemake@params[['outdir']], .y$pfam, "_cdbg_nodes.tsv"), col_names = F))
+  group_walk(~ write_tsv(.x, paste0(snakemake@params[['outdir']], .y$pfam, "_cdbg_nodes.tsv.gz"), col_names = F))

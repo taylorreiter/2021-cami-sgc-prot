@@ -7,10 +7,18 @@ def checkpoint_separate_cdbg_nodes_by_annot(wildcards):
                         pfam = glob_wildcards(os.path.join(checkpoint_output, "{pfam}_cdbg_nodes.tsv.gz")).pfam)
     return file_names
 
+def checkpoint_separate_cdbg_nodes_by_annot2(wildcards):
+    # checkpoint_output encodes the output dir from the checkpoint rule.
+    checkpoint_output = checkpoints.separate_cdbg_nodes_by_annot.get(**wildcards).output[0]    
+    file_names = expand("outputs/gs_read_sets/{pfam}_gs_read_names.tsv",
+                        pfam = glob_wildcards(os.path.join(checkpoint_output, "{pfam}_cdbg_nodes.tsv.gz")).pfam)
+    return file_names
+
 rule all:
     input:
         "outputs/abundtrim/reads_that_were_trimmed_before_sgc_names.txt",
-        checkpoint_separate_cdbg_nodes_by_annot
+        checkpoint_separate_cdbg_nodes_by_annot,
+        checkpoint_separate_cdbg_nodes_by_annot2
 
 rule download_CAMI:
     output: "inputs/CAMI_low.tar"
@@ -96,8 +104,7 @@ rule grab_names_of_trimmed_reads:
 rule spacegraphcats:
     input:
         fq="outputs/abundtrim/CAMI_low.abundtrim.fq.gz",
-        #conf="conf/CAMI_low_sgc_conf1.yml"
-        conf = "conf/CAMI_low_sgc_conf_all_pfam.yml"
+        conf="conf/CAMI_low_sgc_conf2.yml"
     output: 
         "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x/multifasta_x.cdbg_annot.csv",
         "outputs/spacegraphcats/CAMI_low_k31/bcalm.unitigs.db"
@@ -226,13 +233,13 @@ rule download_pfam_id_to_name_map:
 rule grab_gs_read_names:
     input:
         gs = "/home/tereiter/github/2021-cami-annot/outputs/gs_read_annotations/CAMI_low_gs_read_annotations_with_eggnog.tsv",
-        pfam_map = "inputs/Pfam-A.clans.tsv.gz"
+        pfam_map = "inputs/Pfam-A.clans.tsv.gz",
         pfam_sgc = "outputs/spacegraphcats/CAMI_low_k31_r1_multifasta_x_sequences/{pfam}.nbhds.read_names.txt"
-    output: "outputs/gs_read_sets/{pfam}_gs_read_names.tsv"
+    output: pfam_gs = "outputs/gs_read_sets/{pfam}_gs_read_names.tsv"
     threads: 1
     benchmark: "benchmarks/gs_grab_read_names_{pfam}.tsv"
     resources:
-        mem_mb = 32000,
+        mem_mb = 64000,
         tmpdir = TMPDIR
-    script: ""
+    script: "scripts/grab_gs_read_names.R"
     
